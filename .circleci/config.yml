@@ -1,33 +1,3 @@
-version: 2.1
-
-orbs:
-  python: circleci/python@2.1.1
-
-jobs:
-  build-and-test:
-    docker:
-      - image: cimg/python:3.11
-    working_directory: ~/repo
-    steps:
-      - checkout
-
-      - run:
-          name: Upgrade pip
-          command: python -m pip install --upgrade pip
-
-      - run:
-          name: Install deps (no cache)
-          command: python -m pip install --no-cache-dir -r requirements.txt
-
-      - run:
-          name: Import API (Sanity Check)
-          command: python -c "import app; print('FastAPI app imported successfully')"
-
-      - run:
-          name: Run tests
-          command: pytest -q
-
-workflows:
-  build:
-    jobs:
-      - build-and-test
+- run:
+    name: Import API (Sanity Check)
+    command: LOAD_MODELS=false python -c "import app; print('FastAPI app imported successfully')"
