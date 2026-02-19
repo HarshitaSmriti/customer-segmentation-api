@@ -1,6 +1,7 @@
 fastapi
 uvicorn
-scikit-learn
 pandas
 numpy
+joblib
 pytest
+scikit-learn==1.6.1
