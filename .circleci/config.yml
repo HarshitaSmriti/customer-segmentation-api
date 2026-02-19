@@ -11,9 +11,13 @@ jobs:
     steps:
       - checkout
 
-      - python/install-packages:
-          pkg-manager: pip
-          pip-dependency-file: requirements.txt
+      - run:
+          name: Upgrade pip
+          command: python -m pip install --upgrade pip
+
+      - run:
+          name: Install deps (no cache)
+          command: python -m pip install --no-cache-dir -r requirements.txt
 
       - run:
           name: Import API (Sanity Check)
