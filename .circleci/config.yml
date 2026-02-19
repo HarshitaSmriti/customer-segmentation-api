@@ -16,12 +16,8 @@ jobs:
           pip-dependency-file: requirements.txt
 
       - run:
-          name: Import API (Sanity Check)
-          command: |
-            python - << 'EOF'
-            import app
-            print("FastAPI app imported successfully ✅")
-            EOF
+    name: Import API (Sanity Check)
+    command: python -c "import app; print('FastAPI app imported successfully ✅')"
 
 workflows:
   version: 2
