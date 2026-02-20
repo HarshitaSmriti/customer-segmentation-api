@@ -44,11 +44,12 @@ jobs:
       - run:
           name: Deploy to AWS Elastic Beanstalk
           command: |
-            # Matches your Application name exactly from the screenshot
+            # 1. Matches your Application name
             eb init customer-segmentation-api --platform docker --region $AWS_DEFAULT_REGION
             
-            # FIXED: Matches the exact Environment Name from your dashboard (Capital C)
-            eb deploy Customer-segmentation-api
+            # 2. FIXED: Matches the full Environment Name (including -env)
+            # AWS usually appends -env to the environment name automatically.
+            eb deploy Customer-segmentation-api-env
 
 workflows:
   version: 2
