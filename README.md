@@ -56,4 +56,8 @@ docker run -p 5000:5000 segmentation-api
 
 ---
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](
+https://colab.research.google.com/github/HarshitaSmriti/customer-segmentation-api/blob/main/DataModel.ipynb
+) Open this Notebook to know more about the project working
+
 **Project Author:** Harshita Smriti
