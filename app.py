@@ -1,221 +1,99 @@
 from flask import Flask, jsonify, request
 import os
-<<<<<<< HEAD
+import joblib
+import pandas as pd
 
-# Optional imports (don’t crash CI if missing heavy deps)
-try:
-    import joblib
-except Exception:
-    joblib = None
-
-# Optional Cassandra hook (don’t crash CI)
+# Try to import Cassandra session logic from your db.py
 try:
     from db import get_session
-except Exception:
+except ImportError:
     get_session = None
 
 app = Flask(__name__)
 
-# Lazy-loaded globals
+# Global variables for models and database
 MODELS = {}
 SESSION = None
+MODELS_LOADED = False
 
+# Feature columns (Must match the order used during model training)
+FEATURE_COLS = [
+    "Age", "Education", "Marital Status", "Parental Status", "Children", 
+    "Income", "Total_Spending", "Days_as_Customer", "Recency", "Wines", 
+    "Fruits", "Meat", "Fish", "Sweets", "Gold", "Web", "Catalog", 
+    "Store", "Discount Purchases", "Total Promo", "NumWebVisitsMonth", 
+    "Family_Size", "Spending_per_Day", "Digital_Engagement", 
+    "Offline_Engagement", "Discount_Ratio", "Premium_Ratio", 
+    "Freshness_Score", "Variety_Index"
+]
 
 def init_resources():
-    """
-    Initialize DB + models only when needed.
-    Safe for CI (skips heavy stuff when CI=true).
-    """
-    global MODELS, SESSION
-
+    """Initializes models and DB. Skips during CircleCI builds."""
+    global MODELS, SESSION, MODELS_LOADED
+    
     if os.getenv("CI"):
-        print("CI mode: skipping DB + model loading")
+        print("CI mode: skipping heavy resource loading")
         return
 
-    # Init Cassandra session (optional)
+    # Initialize Cassandra
     if get_session:
         try:
             SESSION = get_session()
-            print("Cassandra connected")
+            print("Cassandra connected successfully")
         except Exception as e:
-            print("Cassandra connection failed:", e)
+            print(f"Cassandra connection failed: {e}")
 
-    # Load ML models (if available)
-    if joblib:
-        try:
-            MODELS["classifier"] = joblib.load("classifier_model.pkl")
-            MODELS["kmeans"] = joblib.load("kmeans_model.pkl")
-            MODELS["lda"] = joblib.load("lda.pkl")          # LDA instead of PCA
-            MODELS["preprocessor"] = joblib.load("preprocessor.pkl")
-            print("Models loaded")
-        except Exception as e:
-            print("Model loading failed:", e)
-
+    # Load Pickle Models
+    try:
+        MODELS["classifier"] = joblib.load("classifier_model.pkl")
+        MODELS["kmeans"] = joblib.load("kmeans_model.pkl")
+        MODELS["lda"] = joblib.load("lda.pkl")
+        MODELS["preprocessor"] = joblib.load("preprocessor.pkl")
+        MODELS_LOADED = True
+        print("All models loaded successfully")
+    except Exception as e:
+        print(f"Model loading failed: {e}")
 
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"status": "ok", "message": "Customer Segmentation API running"})
-
-
-@app.route("/train", methods=["GET"])
-def train():
-    """
-    Trigger training pipeline.
-    Hook this to your src/components pipeline.
-    """
-    init_resources()
-
-    if os.getenv("CI"):
-        return jsonify({"message": "CI mode: train endpoint skipped"}), 200
-
-    # TODO: integrate with your pipeline
-    # from src.components.model_trainer import ModelTrainer
-    # ModelTrainer().train()
-
-    return jsonify({"message": "Training triggered"}), 200
-
+    return jsonify({"status": "ok", "message": "Customer Segmentation API running (Flask)"})
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    """
-    Predict customer cluster/personality.
-    """
-    init_resources()
-
     if os.getenv("CI"):
-        return jsonify({"message": "CI mode: predict endpoint skipped"}), 200
+        return jsonify({"message": "CI mode: prediction skipped"}), 200
+    
+    if not MODELS_LOADED:
+        return jsonify({"error": "Models not loaded on server"}), 503
 
-    if not MODELS:
-        return jsonify({"error": "Models not loaded"}), 500
+    # Get JSON data from request
+    input_data = request.get_json()
+    
+    try:
+        # Convert to DataFrame and fix column names
+        df = pd.DataFrame([input_data])
+        # Ensure your input JSON keys match the FEATURE_COLS or rename them here
+        
+        # 1. Preprocess & Scale
+        x_scaled = MODELS["preprocessor"].transform(df)
+        
+        # 2. Dimensionality Reduction (LDA)
+        x_lda = MODELS["lda"].transform(x_scaled)
 
-    data = request.json
+        # 3. Predict Clusters
+        cluster_unsupervised = int(MODELS["kmeans"].predict(x_lda)[0])
+        cluster_supervised = int(MODELS["classifier"].predict(x_scaled)[0])
 
-    # TODO: preprocess input using your pipeline
-    # X = MODELS["preprocessor"].transform([data])
-
-    # TODO: predict cluster
-    # cluster = MODELS["kmeans"].predict(X)[0]
-    # pred = MODELS["classifier"].predict(X)[0]
-
-    return jsonify({
-        "message": "Prediction endpoint wired",
-        "note": "Connect this to your ML pipeline logic",
-    }), 200
-
+        return jsonify({
+            "kmeans_cluster": cluster_unsupervised,
+            "predicted_cluster": cluster_supervised,
+            "status": "success"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
-    # Don’t auto-run DB or models at import time
+    # Load resources before starting the server
+    init_resources()
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
-=======
-
-import joblib
-import pandas as pd
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-app = FastAPI(title="Customer Segmentation API")
-
-MODELS_LOADED = False
-
-if not os.getenv("CI"):
-    classifier = joblib.load("classifier_model.pkl")
-    kmeans_model = joblib.load("kmeans_model.pkl")
-    lda = joblib.load("lda.pkl")
-    preprocessor = joblib.load("preprocessor.pkl")
-    MODELS_LOADED = True
-else:
-    print("CI detected - skipping model loading")
-
-FEATURE_COLS = [
-    "Age",
-    "Education",
-    "Marital Status",
-    "Parental Status",
-    "Children",
-    "Income",
-    "Total_Spending",
-    "Days_as_Customer",
-    "Recency",
-    "Wines",
-    "Fruits",
-    "Meat",
-    "Fish",
-    "Sweets",
-    "Gold",
-    "Web",
-    "Catalog",
-    "Store",
-    "Discount Purchases",
-    "Total Promo",
-    "NumWebVisitsMonth",
-    "Family_Size",
-    "Spending_per_Day",
-    "Digital_Engagement",
-    "Offline_Engagement",
-    "Discount_Ratio",
-    "Premium_Ratio",
-    "Freshness_Score",
-    "Variety_Index",
-]
-
-
-class CustomerInput(BaseModel):
-    Age: int
-    Education: int
-    Marital_Status: int
-    Parental_Status: int
-    Children: int
-    Income: float
-    Total_Spending: float
-    Days_as_Customer: int
-    Recency: int
-    Wines: float
-    Fruits: float
-    Meat: float
-    Fish: float
-    Sweets: float
-    Gold: float
-    Web: int
-    Catalog: int
-    Store: int
-    Discount_Purchases: int
-    Total_Promo: int
-    NumWebVisitsMonth: int
-    Family_Size: int
-    Spending_per_Day: float
-    Digital_Engagement: int
-    Offline_Engagement: int
-    Discount_Ratio: float
-    Premium_Ratio: float
-    Freshness_Score: float
-    Variety_Index: int
-
-
-@app.get("/")
-def home():
-    return {"message": "Customer Segmentation API is running"}
-
-
-@app.post("/predict")
-def predict_cluster(payload: CustomerInput):
-    if not MODELS_LOADED:
-        raise HTTPException(
-            status_code=503,
-            detail="Models are not loaded. Set CI=false and restart service.",
-        )
-
-    data = pd.DataFrame([payload.model_dump()])
-    data.columns = FEATURE_COLS
-
-    x_scaled = preprocessor.transform(data)
-    x_lda = lda.transform(x_scaled)
-
-    cluster_unsupervised = int(kmeans_model.predict(x_lda)[0])
-    cluster_supervised = int(classifier.predict(x_scaled)[0])
-
-    return {
-        "kmeans_cluster": cluster_unsupervised,
-        "predicted_cluster": cluster_supervised,
-    }
->>>>>>> 365719a8fb816c1044589d3f06628dfd83afaf1b
