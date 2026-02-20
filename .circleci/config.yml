@@ -3,24 +3,44 @@ version: 2.1
 jobs:
   build-and-test:
     docker:
+      # Primary container where your Python code runs
       - image: cimg/python:3.11
+      # Secondary container running the database
+      - image: cassandra:4.1
+        environment:
+          CASSANDRA_CLUSTER_NAME: test-cluster
+    
     steps:
       - checkout
 
       - run:
-          name: Install dependencies
+          name: Install Dependencies
           command: |
             python -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+            # cqlsh is needed for the "Wait for Cassandra" step
+            pip install cqlsh 
 
       - run:
-          name: Run tests safely in CI
+          name: Wait for Cassandra
           command: |
             . venv/bin/activate
+            # Loop to check if Cassandra is ready to accept connections
+            for i in {1..30}; do
+              cqlsh localhost 9042 -e "DESCRIBE KEYSPACES" && break || sleep 5
+            done
+
+      - run:
+          name: Run Pytest
+          command: |
+            . venv/bin/activate
+            # Exporting variables for the app/tests to pick up
             export CI=true
-            pytest -q || echo "No tests found, skipping"
+            export CASSANDRA_HOST=localhost
+            export CASSANDRA_PORT=9042
+            pytest -q
 
 workflows:
   version: 2
