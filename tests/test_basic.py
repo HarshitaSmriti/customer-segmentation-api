@@ -12,7 +12,7 @@ def test_home_route(client):
     assert response.status_code == 200
     assert response.get_json()['status'] == 'ok'
 
-def test_train_route_ci_mode(client):
+def test_train_route_ci(client):
     response = client.get('/train')
     assert response.status_code == 200
     assert "CI mode" in response.get_json()['message']

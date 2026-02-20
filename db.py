@@ -4,21 +4,23 @@ from datetime import datetime
 from cassandra.cluster import Cluster
 
 def get_session():
-    contact_point = os.getenv("CASSANDRA_HOST", "localhost")
+    host = os.getenv("CASSANDRA_HOST", "localhost")
     port = int(os.getenv("CASSANDRA_PORT", 9042))
     
-    cluster = Cluster([contact_point], port=port)
+    cluster = Cluster([host], port=port)
     session = cluster.connect()
     
+    # Setup Keyspace
     session.execute("""
         CREATE KEYSPACE IF NOT EXISTS customer_segmentation 
         WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}
     """)
     session.set_keyspace('customer_segmentation')
     
+    # Setup Table
     session.execute("""
         CREATE TABLE IF NOT EXISTS predictions (
-            customer_id uuid PRIMARY KEY,
+            prediction_id uuid PRIMARY KEY,
             income float,
             age int,
             kmeans_cluster int,
@@ -32,7 +34,7 @@ def save_prediction(data, k_cluster, p_cluster):
     try:
         session = get_session()
         query = """
-            INSERT INTO predictions (customer_id, income, age, kmeans_cluster, predicted_cluster, created_at)
+            INSERT INTO predictions (prediction_id, income, age, kmeans_cluster, predicted_cluster, created_at)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
         session.execute(query, (

@@ -10,7 +10,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install deps
+          name: Install dependencies
           command: |
             python -m venv venv
             . venv/bin/activate
@@ -25,7 +25,7 @@ jobs:
               cqlsh localhost 9042 -e "DESCRIBE KEYSPACES" && break || sleep 5
             done
       - run:
-          name: Run tests
+          name: Run Pytest
           command: |
             . venv/bin/activate
             export CI=true
