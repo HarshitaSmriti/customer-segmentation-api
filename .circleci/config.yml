@@ -44,11 +44,12 @@ jobs:
       - run:
           name: Deploy to AWS Elastic Beanstalk
           command: |
-            # Matches your application name
+            # 1. Matches your Application name (usually lowercase)
             eb init customer-segmentation-api --platform docker --region $AWS_DEFAULT_REGION
             
-            # Matches your exact Environment Name from the screenshot
-            eb deploy Customer-segmentation-api
+            # 2. FIXED: Matches the exact Environment Name from your URL/Console
+            # The error 'exit status 4' happens when this name is missing the suffix
+            eb deploy Customer-segmentation-api-env
 
 workflows:
   version: 2
