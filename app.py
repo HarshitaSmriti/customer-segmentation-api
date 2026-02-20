@@ -1,8 +1,10 @@
 import os
-import pickle
+import joblib
 
-if os.getenv("LOAD_MODELS", "true") == "true":
-    preprocessor = pickle.load(open("preprocessor.pkl", "rb"))
-    lda = pickle.load(open("lda.pkl", "rb"))
-    kmeans = pickle.load(open("kmeans_model.pkl", "rb"))
-    classifier = pickle.load(open("classifier_model.pkl", "rb"))
+if not os.getenv("CI"):
+    classifier = joblib.load("classifier_model.pkl")
+    kmeans = joblib.load("kmeans_model.pkl")
+    lda = joblib.load("lda.pkl")
+    preprocessor = joblib.load("preprocessor.pkl")
+else:
+    print("CI detected – skipping model loading")

@@ -1,7 +1,7 @@
+# requirements.txt
+scikit-learn==1.6.1
+joblib
+numpy
+pandas
 fastapi
 uvicorn
-pandas
-numpy
-joblib
-pytest
-scikit-learn==1.6.1
