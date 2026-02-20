@@ -1,8 +1,7 @@
-# requirements.txt
-scikit-learn==1.6.1
-joblib
-numpy
-pandas
-fastapi
-uvicorn
+flask
 cassandra-driver
+scikit-learn
+joblib
+pandas
+numpy
+pytest
