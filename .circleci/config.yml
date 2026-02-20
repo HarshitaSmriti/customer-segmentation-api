@@ -7,36 +7,31 @@ jobs:
       - image: cassandra:4.1
         environment:
           CASSANDRA_CLUSTER_NAME: test-cluster
-    
     steps:
       - checkout
-
       - run:
-          name: Install Dependencies
+          name: Install deps
           command: |
             python -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
-            pip install cqlsh  # Needed for the health check loop
-
+            pip install cqlsh
       - run:
           name: Wait for Cassandra
           command: |
             . venv/bin/activate
-            # Loop ensures we don't start tests until the DB is actually ready
             for i in {1..30}; do
               cqlsh localhost 9042 -e "DESCRIBE KEYSPACES" && break || sleep 5
             done
-
       - run:
-          name: Run Tests
+          name: Run tests
           command: |
             . venv/bin/activate
             export CI=true
             export CASSANDRA_HOST=localhost
             export CASSANDRA_PORT=9042
-            export PYTHONPATH=.  # CRITICAL: Tells pytest to look in root for app.py and db.py
+            export PYTHONPATH=.
             pytest tests/test_basic.py
 
 workflows:
