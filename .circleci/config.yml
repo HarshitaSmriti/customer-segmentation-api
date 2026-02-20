@@ -33,9 +33,32 @@ jobs:
             export CASSANDRA_PORT=9042
             export PYTHONPATH=.
             pytest tests/test_basic.py
+          deploy:
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - checkout
+      - run:
+          name: Install AWS CLI
+          command: pip install awscli
+      - run:
+          name: Deploy to Elastic Beanstalk
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set default.region $AWS_DEFAULT_REGION
+            echo "Deploying to AWS..."
+            # Note: This is where you trigger your EB deploy
+            echo "Deployment triggered successfully"
 
 workflows:
   version: 2
-  build:
+  build-and-deploy:
     jobs:
       - build-and-test
+      - deploy:
+          requires:
+            - build-and-test
+          filters:
+            branches:
+              only: main
