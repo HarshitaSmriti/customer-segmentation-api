@@ -21,16 +21,15 @@ jobs:
           name: Wait for Cassandra
           command: |
             . venv/bin/activate
-            for i in {1..30}; do
+            # Wait up to 60s for Cassandra to be ready
+            for i in {1..12}; do
               cqlsh localhost 9042 -e "DESCRIBE KEYSPACES" && break || sleep 5
             done
       - run:
-          name: Run Pytest
+          name: Run LDA Model Tests
           command: |
             . venv/bin/activate
-            export CI=true
             export CASSANDRA_HOST=localhost
-            export CASSANDRA_PORT=9042
             export PYTHONPATH=.
             pytest tests/test_basic.py
 
@@ -40,17 +39,16 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install AWS CLI
-          command: pip install awscli
+          name: Install AWS EB CLI
+          command: pip install awsebcli
       - run:
-          name: Deploy to AWS
+          name: Deploy to AWS Elastic Beanstalk
           command: |
-            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-            aws configure set default.region $AWS_DEFAULT_REGION
-            echo "Deploying to AWS Elastic Beanstalk..."
-            # The next command triggers the actual AWS deployment
-            echo "Deployment successful"
+            # Matches your application name
+            eb init customer-segmentation-api --platform docker --region $AWS_DEFAULT_REGION
+            
+            # Matches your exact Environment Name from the screenshot
+            eb deploy Customer-segmentation-api
 
 workflows:
   version: 2
